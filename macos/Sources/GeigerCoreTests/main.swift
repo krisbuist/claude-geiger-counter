@@ -1,3 +1,4 @@
 zonesTests()
 tokenLedgerTests()
+rateWindowTests()
 finish()
