@@ -1,6 +1,9 @@
 import Foundation
 
 /// 5 ms noise-burst click, 22 kHz 8-bit mono WAV, deterministic LCG noise.
+/// Note: sample bytes intentionally differ from the JS CLI's WAV — the JS LCG
+/// loses float64 precision above 2^53 and produces different (equally random-
+/// sounding) noise. Same envelope, rate, and format; exact math here.
 public func makeClickWavData() -> Data {
     let sampleRate: UInt32 = 22050
     let n = Int(Double(sampleRate) * 0.005)
