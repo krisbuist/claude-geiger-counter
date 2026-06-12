@@ -39,7 +39,11 @@ public final class TranscriptScanner {
                 guard let attrs = try? fm.attributesOfItem(atPath: file.path),
                       let mtime = attrs[.modificationDate] as? Date,
                       let size = (attrs[.size] as? NSNumber)?.uint64Value
-                else { continue }
+                else {
+                    fileOffsets.removeValue(forKey: file.path)
+                    partialLine.removeValue(forKey: file.path)
+                    continue
+                }
                 if mtime < cutoff && fileOffsets[file.path] == nil { continue }
                 bursts += readAppended(file: file, size: size, project: projectName(d))
             }
@@ -58,6 +62,12 @@ public final class TranscriptScanner {
         let key = file.path
         guard let offset = fileOffsets[key] else {
             fileOffsets[key] = size // first sighting: skip history
+            return []
+        }
+        if size < offset {
+            // file shrank (deleted + recreated): re-prime at EOF, drop stale partial
+            fileOffsets[key] = size
+            partialLine.removeValue(forKey: key)
             return []
         }
         guard size > offset,

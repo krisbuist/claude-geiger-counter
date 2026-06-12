@@ -62,6 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if clickScheduler.tick(frac: frac, now: Date().timeIntervalSinceReferenceDate) {
             audio.click()
             clickFlashUntil = Date().addingTimeInterval(0.15)
+            render() // flash immediately; periodic render clears it
         }
     }
 

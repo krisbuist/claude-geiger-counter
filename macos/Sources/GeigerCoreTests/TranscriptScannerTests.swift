@@ -136,4 +136,27 @@ func transcriptScannerTests() {
         try appendBytes(Array(bytes[splitAt...]), to: file)
         expectEqual(scanner.scan(), [Burst(project: "p", tokens: 21)], "line survives multibyte split")
     }
+
+    // deleted-then-recreated file re-primes at EOF instead of misreading old offset
+    withTempProjects("recreated file") { tmp in
+        let dir = try makeProjectDir(tmp, "-Users-test-p")
+        let file = dir.appendingPathComponent("s.jsonl")
+        try append(usageLine(id: "m1", output: 5), to: file)
+        let scanner = TranscriptScanner(projectsDir: tmp)
+        scanner.scan() // primes at EOF
+        try FileManager.default.removeItem(at: file)
+        // file gone: enumeration may or may not list it; force the stat-failure path
+        // by scanning while a sibling keeps the dir listed
+        scanner.scan()
+        try append(usageLine(id: "m2", output: 7), to: file) // recreated, shorter history
+        expectEqual(scanner.scan(), [], "recreated file re-primes at EOF")
+        try append(usageLine(id: "m3", output: 9), to: file)
+        expectEqual(scanner.scan(), [Burst(project: "p", tokens: 9)], "appends after re-prime register")
+        // recreated strictly shorter than the stale offset: must re-prime, not wedge
+        try FileManager.default.removeItem(at: file)
+        try append(usageLine(id: "m4", output: 3), to: file) // one line < old two-line offset
+        expectEqual(scanner.scan(), [], "shorter recreation re-primes at EOF")
+        try append(usageLine(id: "m5", output: 11), to: file)
+        expectEqual(scanner.scan(), [Burst(project: "p", tokens: 11)], "appends after shrink re-prime register")
+    }
 }
