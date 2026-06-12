@@ -39,6 +39,9 @@ func expectEqual(
 }
 
 func finish() -> Never {
+    if assertionCount == 0 {
+        print("WARNING — no assertions ran (test suite not registered in main.swift?)")
+    }
     print(failureCount == 0
         ? "OK — \(assertionCount) assertions passed"
         : "FAILED — \(failureCount) of \(assertionCount) assertions failed")
