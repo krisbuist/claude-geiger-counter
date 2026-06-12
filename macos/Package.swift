@@ -7,6 +7,6 @@ let package = Package(
     targets: [
         .target(name: "GeigerCore"),
         .executableTarget(name: "ClaudeGeiger", dependencies: ["GeigerCore"]),
-        .testTarget(name: "GeigerCoreTests", dependencies: ["GeigerCore"]),
+        .executableTarget(name: "GeigerCoreTests", dependencies: ["GeigerCore"]),
     ]
 )
