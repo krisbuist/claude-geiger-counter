@@ -1,4 +1,5 @@
 zonesTests()
 tokenLedgerTests()
 rateWindowTests()
+clickSchedulerTests()
 finish()
