@@ -36,6 +36,7 @@ func tokenLedgerTests() {
     expectEqual(ledger.register(line: "not json at all"), 0, "garbage ignored")
     expectEqual(ledger.register(line: "{\"type\":\"summary\"}"), 0, "no message ignored")
     expectEqual(ledger.register(line: "{\"message\":{\"id\":\"x\"}}"), 0, "no usage ignored")
+    expectEqual(ledger.register(line: "{\"message\":{\"usage\":{\"input_tokens\":5,\"output_tokens\":3}}}"), 0, "no id ignored")
     expectEqual(ledger.totalDose, 0, "nothing registered")
 
     // dedup map stays bounded
@@ -43,6 +44,6 @@ func tokenLedgerTests() {
     for i in 0..<5100 {
         _ = ledger.register(line: line(id: "m\(i)", input: 1, output: 0))
     }
-    expect(ledger.trackedMessageCount <= 5000, "dedup map bounded")
+    expect(ledger.trackedMessageCount <= 4200, "dedup map bounded")
     expectEqual(ledger.totalDose, 5100, "dose unaffected by eviction")
 }
