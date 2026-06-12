@@ -27,6 +27,22 @@ node claude-geiger.js --mute   # gauge only
 
 No dependencies. Node ≥ 18. Audio via `afplay` on macOS, terminal bell elsewhere.
 
+## Menu bar app (macOS)
+
+A native menu bar version lives in `macos/` — same logic, no terminal needed.
+☢ in the menu bar, tinted by zone, with the token rate next to it and the
+full readout in the dropdown. Clicks play in-process; mute from the menu.
+
+```sh
+cd macos
+make app                      # builds "Claude Geiger.app"
+open "Claude Geiger.app"
+```
+
+Requires macOS 13+ and the Xcode command line tools (`swift`). Tests:
+`make test`. The dropdown has a Launch at Login toggle (works from the
+.app bundle, not from `swift run`).
+
 ## How it works
 
 - Tails every live session transcript under `~/.claude/projects/**/*.jsonl`
