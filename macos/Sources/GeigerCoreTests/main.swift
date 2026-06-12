@@ -1,2 +1,3 @@
 zonesTests()
+tokenLedgerTests()
 finish()
