@@ -7,6 +7,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let projectsDir = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent(".claude/projects")
     private lazy var scanner = TranscriptScanner(projectsDir: projectsDir)
+    private let scanQueue = DispatchQueue(label: "claude-geiger.scan", qos: .utility)
+    private var totalDose = 0
+    private var projectsDirExists = true
+    private var timers: [Timer] = []
     private var rateWindow = RateWindow()
     private var clickScheduler = ClickScheduler()
     private let audio = ClickAudio()
@@ -28,7 +32,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let clickTimer = Timer(timeInterval: 0.02, repeats: true) { [weak self] _ in self?.clickTick() }
         let renderTimer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in self?.render() }
         // .common mode so timers keep firing while the menu is open
-        for t in [scanTimer, clickTimer, renderTimer] { RunLoop.main.add(t, forMode: .common) }
+        timers = [scanTimer, clickTimer, renderTimer]
+        for t in timers { RunLoop.main.add(t, forMode: .common) }
         render()
     }
 
@@ -36,9 +41,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func scanTick() {
         let now = Date()
-        for burst in scanner.scan(now: now) {
-            rateWindow.add(tokens: burst.tokens, at: now)
-            lastBurst = (burst.project, burst.tokens, now)
+        scanQueue.async { [weak self] in
+            guard let self else { return }
+            let bursts = self.scanner.scan(now: now)
+            let dose = self.scanner.totalDose
+            let dirExists = FileManager.default.fileExists(atPath: self.projectsDir.path)
+            DispatchQueue.main.async {
+                self.totalDose = dose
+                self.projectsDirExists = dirExists
+                for b in bursts {
+                    self.rateWindow.add(tokens: b.tokens, at: now)
+                    self.lastBurst = (b.project, b.tokens, now)
+                }
+            }
         }
     }
 
@@ -94,10 +109,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let ss = String(format: "%02d", uptime % 60)
 
         rateItem.title = "RATE  \(fmt(rate))/min   \(zone.label)"
-        doseItem.title = "DOSE  \(fmt(Double(scanner.totalDose)))   uptime \(hh):\(mm):\(ss)"
+        doseItem.title = "DOSE  \(fmt(Double(totalDose)))   uptime \(hh):\(mm):\(ss)"
         if let b = lastBurst, now.timeIntervalSince(b.t) < 30 {
             lastItem.title = "LAST  +\(fmt(Double(b.tokens)))  \(String(b.project.prefix(30)))"
-        } else if !FileManager.default.fileExists(atPath: projectsDir.path) {
+        } else if !projectsDirExists {
             lastItem.title = "LAST  no transcripts found"
         } else {
             lastItem.title = "LAST  —"

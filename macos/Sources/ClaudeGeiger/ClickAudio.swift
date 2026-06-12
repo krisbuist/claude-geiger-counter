@@ -4,12 +4,14 @@ import GeigerCore
 /// Plays the geiger click in-process via a small pool of AVAudioPlayers,
 /// so rapid clicks can overlap without spawning processes.
 final class ClickAudio {
+    private static let mutedKey = "clicksMuted"
+
     private var players: [AVAudioPlayer] = []
     private var next = 0
 
     var muted: Bool {
-        get { UserDefaults.standard.bool(forKey: "muted") }
-        set { UserDefaults.standard.set(newValue, forKey: "muted") }
+        get { UserDefaults.standard.bool(forKey: Self.mutedKey) }
+        set { UserDefaults.standard.set(newValue, forKey: Self.mutedKey) }
     }
 
     init() {
