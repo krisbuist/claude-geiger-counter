@@ -16,7 +16,7 @@ public struct Burst: Equatable {
 public final class TranscriptScanner {
     private let projectsDir: URL
     private var fileOffsets: [String: UInt64] = [:]
-    private var partialLine: [String: String] = [:]
+    private var partialLine: [String: Data] = [:]
     private var ledger = TokenLedger()
 
     public var totalDose: Int { ledger.totalDose }
@@ -25,6 +25,7 @@ public final class TranscriptScanner {
         self.projectsDir = projectsDir
     }
 
+    @discardableResult
     public func scan(now: Date = Date()) -> [Burst] {
         let fm = FileManager.default
         guard let dirs = try? fm.contentsOfDirectory(atPath: projectsDir.path) else { return [] }
@@ -68,15 +69,20 @@ public final class TranscriptScanner {
         else { return [] }
         fileOffsets[key] = offset + UInt64(data.count)
 
-        let text = (partialLine[key] ?? "") + (String(data: data, encoding: .utf8) ?? "")
-        var lines = text.components(separatedBy: "\n")
-        partialLine[key] = lines.popLast() ?? ""
-
+        // Buffer raw bytes and split on \n before decoding, so a chunk
+        // ending mid-multibyte-character never corrupts or drops a line.
+        var buffer = (partialLine[key] ?? Data()) + data
         var bursts: [Burst] = []
-        for line in lines where !line.trimmingCharacters(in: .whitespaces).isEmpty {
+        while let nl = buffer.firstIndex(of: 0x0A) {
+            let lineData = buffer.subdata(in: buffer.startIndex..<nl)
+            buffer.removeSubrange(buffer.startIndex...nl)
+            guard let line = String(data: lineData, encoding: .utf8),
+                  !line.trimmingCharacters(in: .whitespaces).isEmpty
+            else { continue }
             let delta = ledger.register(line: line)
             if delta > 0 { bursts.append(Burst(project: project, tokens: delta)) }
         }
+        partialLine[key] = buffer
         return bursts
     }
 }
