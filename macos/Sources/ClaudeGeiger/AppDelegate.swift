@@ -12,12 +12,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var projectsDirExists = true
     private var timers: [Timer] = []
     private var rateWindow = RateWindow()
+    private var sparkline = SparklineHistory()
     private var clickScheduler = ClickScheduler()
     private let audio = ClickAudio()
     private let started = Date()
     private var lastBurst: (project: String, tokens: Int, t: Date)?
     private var clickFlashUntil = Date.distantPast
 
+    private let sparkItem = NSMenuItem(title: "TREND  —", action: nil, keyEquivalent: "")
     private let rateItem = NSMenuItem(title: "RATE  —", action: nil, keyEquivalent: "")
     private let doseItem = NSMenuItem(title: "DOSE  —", action: nil, keyEquivalent: "")
     private let lastItem = NSMenuItem(title: "LAST  —", action: nil, keyEquivalent: "")
@@ -96,6 +98,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let zone = ZoneLevel.forRate(rate)
         let color = zoneColor(zone, flashing: now < clickFlashUntil)
 
+        sparkline.add(fraction: gaugeFraction(rate: rate), at: now)
+        let spark = sparkline.render(now: now, columns: 30)
+
         let title = zone == .background ? "☢" : "☢ \(compactRate(rate))"
         statusItem.button?.attributedTitle = NSAttributedString(
             string: title,
@@ -110,6 +115,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let ss = String(format: "%02d", uptime % 60)
 
         rateItem.title = "RATE  \(fmt(rate))/min   \(zone.label)"
+        sparkItem.attributedTitle = NSAttributedString(
+            string: "TREND  \(spark.isEmpty ? "—" : spark)   5 min",
+            attributes: [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)])
         doseItem.title = "DOSE  \(fmt(Double(totalDose)))   uptime \(hh):\(mm):\(ss)"
         if let b = lastBurst, now.timeIntervalSince(b.t) < 30 {
             lastItem.title = "LAST  +\(fmt(Double(b.tokens)))  \(String(b.project.prefix(30)))"
@@ -125,7 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func buildMenu() -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
-        for item in [rateItem, doseItem, lastItem] {
+        for item in [rateItem, sparkItem, doseItem, lastItem] {
             item.isEnabled = false
             menu.addItem(item)
         }

@@ -17,10 +17,10 @@ public enum ZoneLevel: CaseIterable {
     public var threshold: Double {
         switch self {
         case .background: return 0
-        case .elevated: return 1_000
-        case .hot: return 8_000
-        case .critical: return 30_000
-        case .meltdown: return 80_000
+        case .elevated: return 2_000
+        case .hot: return 20_000
+        case .critical: return 60_000
+        case .meltdown: return 200_000
         }
     }
 
@@ -34,7 +34,7 @@ public enum ZoneLevel: CaseIterable {
 /// tokens/min where the gauge starts moving.
 public let rateFloor: Double = 60
 /// tokens/min that pins the needle.
-public let rateCeil: Double = 120_000
+public let rateCeil: Double = 300_000
 
 /// 0...1 position on a log scale between rateFloor and rateCeil.
 public func gaugeFraction(rate: Double) -> Double {

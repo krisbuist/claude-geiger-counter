@@ -1,6 +1,7 @@
 zonesTests()
 tokenLedgerTests()
 rateWindowTests()
+sparklineHistoryTests()
 clickSchedulerTests()
 clickWavTests()
 transcriptScannerTests()
